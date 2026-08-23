@@ -1,0 +1,38 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // TEMPLATE — merge the "provider" block into your target project's
+  // .opencode/opencode.jsonc (machine-local; keep it gitignored there).
+  //
+  // Per-machine model pinning also lives in that file:
+  //   "agent": { "<agent-id>": { "model": "ollama/qwen3:1.7b" } }
+  //
+  // Ollama: serve with OLLAMA_CONTEXT_LENGTH=8192 — default ctx silently truncates prompts.
+  // LM Studio: context length is set at LOAD time; JIT auto-unload adds latency between tasks.
+  // Verify live model keys: curl http://127.0.0.1:<port>/v1/models | jq -r '.data[].id'
+  // Probe tool-calling:    ./eval/smoke_test.sh
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
+      "options": { "baseURL": "http://127.0.0.1:11434/v1" },
+      "models": {
+        "qwen3:4b-instruct-2507": { "name": "Qwen3 4B Instruct 2507", "limit": { "context": 262144 } },
+        "qwen3:1.7b": { "name": "Qwen3 1.7B", "limit": { "context": 40960 } },
+        "qwen3:8b": { "name": "Qwen3 8B (mac only)", "limit": { "context": 131072 } },
+        "ibm/granite4:micro": { "name": "Granite 4 Micro 3B", "limit": { "context": 131072 } },
+        "llama3.2:3b": { "name": "Llama 3.2 3B", "limit": { "context": 131072 } }
+      }
+    },
+    "lmstudio": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LM Studio (local)",
+      "options": { "baseURL": "http://127.0.0.1:1234/v1" },
+      "models": {
+        // Keys must match YOUR downloaded GGUFs — /v1/models is authoritative.
+        "qwen/qwen3-4b-instruct-2507": { "name": "Qwen3 4B Instruct 2507", "limit": { "context": 262144 } },
+        "qwen/qwen3-1.7b": { "name": "Qwen3 1.7B", "limit": { "context": 40960 } },
+        "ibm-granite/granite-4.0-micro": { "name": "Granite 4 Micro 3B", "limit": { "context": 131072 } }
+      }
+    }
+  }
+}

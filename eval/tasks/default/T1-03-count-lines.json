@@ -1,0 +1,10 @@
+{
+  "id": "T1-count-lines",
+  "tier": "T1",
+  "setup": ["for i in $(seq 1 12); do echo \"row,$i\" >> data.csv; done"],
+  "prompt": "Count the data rows in data.csv in the current directory. Reply with ONLY a JSON object {\"lines\": <number>}.",
+  "checks": [
+    { "type": "output_json", "key": "lines", "equals": 12 }
+  ],
+  "max_steps": 6
+}

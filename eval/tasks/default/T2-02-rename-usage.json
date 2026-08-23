@@ -1,0 +1,15 @@
+{
+  "id": "T2-rename-usage",
+  "tier": "T2",
+  "setup": [
+    "printf 'def fetch_data():\\n    return [1, 2]\\n' > provider.py",
+    "printf 'from provider import fetch_data\\n\\ndef main():\\n    return fetch_data()\\n' > consumer.py"
+  ],
+  "prompt": "In consumer.py, rename every use of fetch_data to load_data. The definition in provider.py must stay untouched. Reply DONE when finished.",
+  "checks": [
+    { "type": "file_not_contains", "path": "consumer.py", "pattern": "fetch_data" },
+    { "type": "file_contains", "path": "consumer.py", "pattern": "load_data" },
+    { "type": "file_contains", "path": "provider.py", "pattern": "^def fetch_data" }
+  ],
+  "max_steps": 10
+}

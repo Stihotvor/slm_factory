@@ -1,0 +1,17 @@
+{
+  "id": "T2-run-check-script",
+  "tier": "T2",
+  "setup": [
+    "printf 'VALUE = 41\\n' > settings.py",
+    "echo '#!/usr/bin/env bash' > check.sh",
+    "echo 'V=$(grep -E ^VALUE settings.py); V=${V//[!0-9]/}' >> check.sh",
+    "echo 'case $V in 42) touch .check_passed; echo PASS;; *) echo FAIL; exit 1;; esac' >> check.sh",
+    "chmod +x check.sh"
+  ],
+  "prompt": "Run ./check.sh. If it fails, fix settings.py so that the check passes, and run it again to confirm. Reply PASS or FAIL.",
+  "checks": [
+    { "type": "file_exists", "path": ".check_passed" },
+    { "type": "file_contains", "path": "settings.py", "pattern": "VALUE\\s*=\\s*42" }
+  ],
+  "max_steps": 10
+}

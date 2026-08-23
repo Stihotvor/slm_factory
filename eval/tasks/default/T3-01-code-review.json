@@ -1,0 +1,10 @@
+{
+  "id": "T3-code-review",
+  "tier": "T3",
+  "setup": [
+    "printf 'def add_item(item, items=[]) :\\n    items.append(item)\\n    return items\\n\\ndef last_index(items):\\n    for i in range(len(items)):\\n        pass\\n    return i\\n' > review_me.py"
+  ],
+  "prompt": "Review review_me.py and reply with a numbered list of concrete bugs or hazards. Do not modify files. Quality of findings is graded by a reviewer.",
+  "judge_required": true,
+  "max_steps": 8
+}

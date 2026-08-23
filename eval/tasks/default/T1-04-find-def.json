@@ -1,0 +1,11 @@
+{
+  "id": "T1-find-def",
+  "tier": "T1",
+  "setup": ["mkdir -p src", "printf 'import os\\n\\ndef process_order(order_id):\\n    return order_id\\n' > src/app.py"],
+  "prompt": "Find the definition of the function process_order in this project. Reply with the relative file path and line number in the format: path:line",
+  "checks": [
+    { "type": "output_contains", "pattern": "src/app\\.py" },
+    { "type": "output_contains", "pattern": ":3\\b" }
+  ],
+  "max_steps": 8
+}

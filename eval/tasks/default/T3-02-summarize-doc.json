@@ -1,0 +1,10 @@
+{
+  "id": "T3-summarize-doc",
+  "tier": "T3",
+  "setup": [
+    "printf '# OrderService\\nHandles order intake, validation against the pricing catalog, and emits events to the billing queue. Retries failed publishes up to 3 times with exponential backoff.\\n' > SERVICE.md"
+  ],
+  "prompt": "Read SERVICE.md and reply with a summary of at most 40 words explaining what this service does. Clarity and accuracy are graded by a reviewer.",
+  "judge_required": true,
+  "max_steps": 6
+}

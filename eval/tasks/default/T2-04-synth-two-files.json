@@ -1,0 +1,13 @@
+{
+  "id": "T2-synth-two-files",
+  "tier": "T2",
+  "setup": [
+    "printf 'Invoice A: 70 EUR\\nInvoice B: 30 EUR\\n' > notes_a.md",
+    "printf 'Late fee: 50 EUR\\nDiscount applied: -0 EUR\\n' > notes_b.md"
+  ],
+  "prompt": "Read notes_a.md and notes_b.md. Reply with ONLY a JSON object {\"total_eur\": <number>} summing every amount found in both files.",
+  "checks": [
+    { "type": "output_json", "key": "total_eur", "equals": 150 }
+  ],
+  "max_steps": 8
+}

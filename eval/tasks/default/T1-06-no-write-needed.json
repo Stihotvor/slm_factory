@@ -1,0 +1,12 @@
+{
+  "id": "T1-no-write-needed",
+  "tier": "T1",
+  "setup": ["printf '[server]\\nhost = 127.0.0.1\\nport = 9001\\n[features]\\nmetrics = on\\n' > config.ini"],
+  "prompt": "Read config.ini and reply with a one-sentence summary of which port the server uses. Do not modify any files.",
+  "checks": [
+    { "type": "output_contains", "pattern": "9001" },
+    { "type": "tool_not_used", "tool": "edit" },
+    { "type": "tool_not_used", "tool": "write" }
+  ],
+  "max_steps": 6
+}

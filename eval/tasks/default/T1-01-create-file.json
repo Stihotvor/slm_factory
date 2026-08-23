@@ -1,0 +1,10 @@
+{
+  "id": "T1-create-file",
+  "tier": "T1",
+  "prompt": "In the current directory, create a file named greeting.txt containing exactly one line: hello factory\nThen reply DONE.",
+  "checks": [
+    { "type": "file_exists", "path": "greeting.txt" },
+    { "type": "file_contains", "path": "greeting.txt", "pattern": "^hello factory\\s*$" }
+  ],
+  "max_steps": 6
+}

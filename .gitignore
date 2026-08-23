@@ -1,0 +1,69 @@
+# ── OS: macOS ─────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ── OS: Windows ───────────────────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ── OS: Linux ─────────────────────────────────────────────────────────────────
+*~
+.nfs*
+.directory
+
+# ── Editors / IDE ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*.swn
+.project
+.settings/
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# ── Node / opencode runtime ───────────────────────────────────────────────────
+node_modules/
+.opencode/node_modules/
+.opencode/**/*.log
+opencode-*.log
+
+# ── Eval runtime artifacts (keep tasks & scripts, never results) ──────────────
+eval/results/
+
+# ── Secrets / environment ─────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+.tmp/
+tmp/
+*.bak
+*.orig
