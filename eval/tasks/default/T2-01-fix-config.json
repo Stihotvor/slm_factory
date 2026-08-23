@@ -1,0 +1,11 @@
+{
+  "id": "T2-fix-config",
+  "tier": "T2",
+  "setup": ["printf '[server]\\nport = 0\\n[logging]\\nlevel = info\\n' > service.conf"],
+  "prompt": "service.conf is misconfigured: the port must be 8080. Fix the port value and reply DONE.",
+  "checks": [
+    { "type": "file_contains", "path": "service.conf", "pattern": "port\\s*=\\s*8080" },
+    { "type": "file_not_contains", "path": "service.conf", "pattern": "port\\s*=\\s*0\\b" }
+  ],
+  "max_steps": 8
+}

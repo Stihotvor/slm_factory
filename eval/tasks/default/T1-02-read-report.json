@@ -1,0 +1,10 @@
+{
+  "id": "T1-read-report",
+  "tier": "T1",
+  "setup": ["printf 'VERSION=7.3.1\\nBUILD=889\\n' > version.txt"],
+  "prompt": "Read version.txt in the current directory. Reply with ONLY a JSON object of the form {\"version\": \"<value>\"} using the VERSION value.",
+  "checks": [
+    { "type": "output_json", "key": "version", "equals": "7.3.1" }
+  ],
+  "max_steps": 6
+}

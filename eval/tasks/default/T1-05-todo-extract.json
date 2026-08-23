@@ -1,0 +1,17 @@
+{
+  "id": "T1-todo-extract",
+  "tier": "T1",
+  "setup": [
+    "printf '# readme\\nTODO: add usage docs\\n' > README.md",
+    "printf 'x = 1  # TODO: validate input\\n' > calc.py",
+    "printf '// TODO: remove debug flag\\nconst d = true;\\n' > app.js"
+  ],
+  "prompt": "Collect every TODO comment from the files in the current directory and write them to todos.json as a JSON array of strings (the text after 'TODO:'). Then reply DONE.",
+  "checks": [
+    { "type": "file_contains", "path": "todos.json", "pattern": "add usage docs" },
+    { "type": "file_contains", "path": "todos.json", "pattern": "validate input" },
+    { "type": "file_contains", "path": "todos.json", "pattern": "remove debug flag" },
+    { "type": "tool_used", "tool": "read" }
+  ],
+  "max_steps": 10
+}
