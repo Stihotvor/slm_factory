@@ -18,7 +18,15 @@ Tasks with "judge_required": true get status "needs_judge" (graded later by the
 main agent via /eval_agent or /optimize_agent; judge score merges on re-run of
 score.py with --judge task_id:score).
 """
-import argparse, json, os, re, sys, glob, datetime
+
+import argparse
+import datetime
+import glob
+import json
+import os
+import re
+import sys
+
 
 def load_json(path, default=None):
     try:
@@ -26,6 +34,7 @@ def load_json(path, default=None):
             return json.load(f)
     except Exception:
         return default
+
 
 def final_text(raw_path):
     """Pull final assistant text out of opencode run --format json NDJSON."""
@@ -43,13 +52,19 @@ def final_text(raw_path):
         part = ev.get("part") or ev.get("message") or ev
         if not isinstance(part, dict):
             continue
-        role = part.get("role") or (ev.get("type") == "assistant.message" and "assistant")
-        if role != "assistant":
-            continue
+        role = part.get("role") or (ev.get("type") in ("assistant.message", "text") and "assistant")
+        if role != "assistant" and ev.get("type") != "text":
+            # also handle raw text parts without explicit role (hosted models)
+            if not (ev.get("type") == "text" and part.get("type") == "text"):
+                continue
         for p in part.get("parts") or []:
             if isinstance(p, dict) and p.get("type") == "text" and p.get("text"):
                 texts.append(p["text"])
+        # fallback: direct text in part itself (hosted format)
+        if part.get("type") == "text" and part.get("text"):
+            texts.append(part["text"])
     return "\n".join(texts).strip()
+
 
 def extract_json_blob(text):
     """Return last balanced {...} block that parses as JSON."""
@@ -62,13 +77,14 @@ def extract_json_blob(text):
                 depth -= 1
                 if depth == 0:
                     try:
-                        return json.loads(text[i:j+1])
+                        return json.loads(text[i : j + 1])
                     except Exception:
                         break
         else:
             continue
         break
     return None
+
 
 def trace_stats(trace_path):
     """Best-effort extraction of tool usage / denials / step count from export."""
@@ -82,7 +98,11 @@ def trace_stats(trace_path):
         nonlocal steps
         if isinstance(o, dict):
             t = o.get("tool") or o.get("toolName")
-            state = str(o.get("state", {}).get("status", "")) if isinstance(o.get("state"), dict) else ""
+            state = (
+                str(o.get("state", {}).get("status", ""))
+                if isinstance(o.get("state"), dict)
+                else ""
+            )
             if t:
                 if "denied" in state.lower() or "denied" in json.dumps(o).lower():
                     tools_denied.append(t)
@@ -95,24 +115,39 @@ def trace_stats(trace_path):
         elif isinstance(o, list):
             for v in o:
                 walk(v)
+
     walk(tr)
     return tools_used, tools_denied, steps
 
+
 def run_checks(task, sandbox_hint_dir, out_text, tools_used, tools_denied, steps):
+    def resolve(path):
+        """Prefer the task's post-run sandbox snapshot; fall back to CWD."""
+        if sandbox_hint_dir:
+            for base in [os.path.join(sandbox_hint_dir, "sandbox"), sandbox_hint_dir]:
+                cand = os.path.join(base, path)
+                if os.path.exists(cand):
+                    return cand
+        return path
+
     results = []
     for c in task.get("checks", []):
         ct, ok, detail = c.get("type"), False, ""
         try:
             if ct == "file_exists":
-                ok = os.path.exists(c["path"])
+                ok = os.path.exists(resolve(c["path"]))
                 detail = c["path"]
             elif ct == "file_contains":
-                p = c["path"]
-                ok = os.path.exists(p) and bool(re.search(c["pattern"], open(p, errors="replace").read()))
+                p = resolve(c["path"])
+                ok = os.path.exists(p) and bool(
+                    re.search(c["pattern"], open(p, errors="replace").read())
+                )
                 detail = f"{p} ~ /{c['pattern']}/"
             elif ct == "file_not_contains":
-                p = c["path"]
-                ok = (not os.path.exists(p)) or (not re.search(c["pattern"], open(p, errors="replace").read()))
+                p = resolve(c["path"])
+                ok = (not os.path.exists(p)) or (
+                    not re.search(c["pattern"], open(p, errors="replace").read())
+                )
                 detail = f"{p} !~ /{c['pattern']}/"
             elif ct == "output_contains":
                 ok = bool(re.search(c["pattern"], out_text))
@@ -142,6 +177,7 @@ def run_checks(task, sandbox_hint_dir, out_text, tools_used, tools_denied, steps
             detail = f"check error: {e}"
         results.append({"type": ct, "ok": bool(ok), "detail": detail})
     return results
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -183,7 +219,8 @@ def main():
                 checks = []
                 if tid in judges:
                     entry.update(status="judged", judge_score=judges[tid])
-                    all_ok += 1; judged += 1
+                    all_ok += 1
+                    judged += 1
                 else:
                     entry.update(status="needs_judge")
             else:
@@ -193,13 +230,15 @@ def main():
                 if passed:
                     all_ok += 1
 
-            entry.update({
-                "checks": checks,
-                "steps": steps,
-                "wall_s": wall_s,
-                "tools_used": sorted(set(tools_used)),
-                "permission_violations": sorted(set(tools_denied)),
-            })
+            entry.update(
+                {
+                    "checks": checks,
+                    "steps": steps,
+                    "wall_s": wall_s,
+                    "tools_used": sorted(set(tools_used)),
+                    "permission_violations": sorted(set(tools_denied)),
+                }
+            )
         per_task.append(entry)
 
     done = [e for e in per_task if e["status"].startswith(("pass", "fail", "judged"))]
@@ -216,9 +255,15 @@ def main():
         "t2_rate": _tier_rate(per_task, "T2"),
         "t3_avg": _t3_avg(per_task),
         "needs_judge": [e["id"] for e in per_task if e["status"] == "needs_judge"],
-        "total_permission_violations": sum(len(e.get("permission_violations", [])) for e in per_task),
-        "median_steps": _median([e.get("steps") for e in per_task if isinstance(e.get("steps"), int)]),
-        "median_wall_s": _median([e.get("wall_s") for e in per_task if isinstance(e.get("wall_s"), (int, float))]),
+        "total_permission_violations": sum(
+            len(e.get("permission_violations", [])) for e in per_task
+        ),
+        "median_steps": _median(
+            [e.get("steps") for e in per_task if isinstance(e.get("steps"), int)]
+        ),
+        "median_wall_s": _median(
+            [e.get("wall_s") for e in per_task if isinstance(e.get("wall_s"), (int, float))]
+        ),
         "per_task": per_task,
     }
 
@@ -230,10 +275,13 @@ def main():
         slim = {k: v for k, v in scores.items() if k != "per_task"}
         f.write(json.dumps(slim) + "\n")
 
-    print(f"success_rate={scores['success_rate']} T1={scores['t1_rate']} T2={scores['t2_rate']} "
-          f"violations={scores['total_permission_violations']} needs_judge={scores['needs_judge']}")
+    print(
+        f"success_rate={scores['success_rate']} T1={scores['t1_rate']} T2={scores['t2_rate']} "
+        f"violations={scores['total_permission_violations']} needs_judge={scores['needs_judge']}"
+    )
     if scores["needs_judge"]:
         print("→ grade these with --judge id:score (main agent reads output.txt)", file=sys.stderr)
+
 
 def _tier_rate(per_task, tier):
     ts = [e for e in per_task if e.get("tier") == tier and e["status"].startswith(("pass", "fail"))]
@@ -241,18 +289,24 @@ def _tier_rate(per_task, tier):
     good = sum(1 for e in ts if e["status"] == "pass") + len(js)
     return round(good / (len(ts) + len(js)), 3) if (ts or js) else None
 
+
 def _t3_avg(per_task):
     """Mean judge score over graded T3 tasks (None until all T3s are judged)."""
-    js = [e["judge_score"] for e in per_task
-          if e.get("tier") == "T3" and isinstance(e.get("judge_score"), (int, float))]
+    js = [
+        e["judge_score"]
+        for e in per_task
+        if e.get("tier") == "T3" and isinstance(e.get("judge_score"), (int, float))
+    ]
     return round(sum(js) / len(js), 1) if js else None
+
 
 def _median(xs):
     xs = sorted(xs)
     n = len(xs)
     if not n:
         return None
-    return xs[n // 2] if n % 2 else round((xs[n//2 - 1] + xs[n//2]) / 2, 2)
+    return xs[n // 2] if n % 2 else round((xs[n // 2 - 1] + xs[n // 2]) / 2, 2)
+
 
 if __name__ == "__main__":
     main()
