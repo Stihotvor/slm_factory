@@ -48,6 +48,7 @@ PINNED_MODEL="${MODEL:-$(sed -n 's/^model:[[:space:]]*["'\'']\{0,1\}\([^"'\''#]*
 TS="$(date +%Y%m%d-%H%M%S)"
 OUT="${OUT:-$HERE/results/$TS-$AGENT}"
 LABEL="${LABEL:-$(basename "$OUT")}"
+PROJECT_ROOT="$(dirname "$HERE")"
 mkdir -p "$OUT"
 
 echo "agent=$AGENT suite=$SUITE backend=$BACKEND out=$OUT"
@@ -92,6 +93,8 @@ for tf in "${TASKS[@]}"; do
   tier=$(jq -r '.tier' "$tf")
   prompt=$(jq -r '.prompt' "$tf")
   tdir=$(mktemp -d "/tmp/openeval.XXXXXX")
+  # Project-scoped agents/config must be visible inside the sandbox project.
+  ln -sfn "$PROJECT_ROOT/.opencode" "$tdir/.opencode"
   mkdir -p "$OUT/$tid"
   echo "── [$tier] $tid  (sandbox: $tdir)"
 
@@ -121,6 +124,9 @@ for tf in "${TASKS[@]}"; do
   fi
 
   echo "rc=$rc sid=${sid:-none} wall=$(python3 -c "print(round(($t1-$t0)/1e9,1))" 2>/dev/null)s"
+  # Snapshot the sandbox into the run dir so file_* checks survive cleanup.
+  mkdir -p "$OUT/$tid/sandbox"
+  cp -a "$tdir/." "$OUT/$tid/sandbox/" 2>/dev/null || true
   [[ "$KEEP" == "1" ]] || rm -rf "$tdir"
 done
 
